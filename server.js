@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const app = express();
 const PORT = 3000;
 
@@ -13,10 +14,28 @@ app.get('/', (req, res) => {
 app.post('/api/kontakt', (req, res) => {
     const { imie, email, temat, wiadomosc } = req.body;
 
-    console.log('Nowa wiadomość z formularza:');
-    console.log({ imie, email, temat, wiadomosc });
+    const nowaWiadomosc = {
+        imie,
+        email,
+        temat,
+        wiadomosc,
+        data: new Date().toISOString()
+    };
 
-    res.json({ sukces: true, komunikat: 'Wiadomość odebrana przez serwer!' });
+    let wiadomosci = [];
+
+    if (fs.existsSync('wiadomosci.json')) {
+        const zawartosc = fs.readFileSync('wiadomosci.json', 'utf-8');
+        wiadomosci = JSON.parse(zawartosc);
+    }
+
+    wiadomosci.push(nowaWiadomosc);
+
+    fs.writeFileSync('wiadomosci.json', JSON.stringify(wiadomosci, null, 2));
+
+    console.log('Zapisano nową wiadomość od:', imie);
+
+    res.json({ sukces: true, komunikat: 'Wiadomość zapisana!' });
 });
 
 app.listen(PORT, () => {
