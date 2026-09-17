@@ -44,6 +44,16 @@ app.post('/api/kontakt', async (req, res) => {
     }
 });
 
+app.get('/api/wiadomosci', async (req, res) => {
+    try {
+        const wiadomosci = await kolekcjaWiadomosci.find().sort({ data: -1 }).toArray();
+        res.json(wiadomosci);
+    } catch (blad) {
+        console.error('Błąd pobierania wiadomości:', blad);
+        res.status(500).json({ sukces: false, komunikat: 'Błąd serwera' });
+    }
+});
+
 polaczZBazaDanych().then(() => {
     app.listen(PORT, () => {
         console.log(`Serwer nasłuchuje na porcie ${PORT}`);
