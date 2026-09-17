@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -43,8 +44,24 @@ app.post('/api/kontakt', async (req, res) => {
         res.status(500).json({ sukces: false, komunikat: 'Błąd serwera' });
     }
 });
+function sprawdzToken(req, res, next) {
+    const authHeader = req.headers.authorization;
 
-app.get('/api/wiadomosci', async (req, res) => {
+    if (!authHeader) {
+        return res.status(401).json({ sukces: false, komunikat: 'Brak tokenu' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        jwt.verify(token, process.env.JWT_SECRET);
+        next();
+    } catch (blad) {
+        res.status(401).json({ sukces: false, komunikat: 'Nieprawidłowy token' });
+    }
+}
+
+app.get('/api/wiadomosci', sprawdzToken, async (req, res) => {
     try {
         const wiadomosci = await kolekcjaWiadomosci.find().sort({ data: -1 }).toArray();
         res.json(wiadomosci);
@@ -58,4 +75,15 @@ polaczZBazaDanych().then(() => {
     app.listen(PORT, () => {
         console.log(`Serwer nasłuchuje na porcie ${PORT}`);
     });
+});
+
+app.post('/api/login', (req, res) => {
+    const { haslo } = req.body;
+
+    if (haslo !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ sukces: false, komunikat: 'Nieprawidłowe hasło' });
+    }
+
+    const token = jwt.sign({ rola: 'admin' }, process.env.JWT_SECRET, { expiresIn: '2h' });
+    res.json({ sukces: true, token: token });
 });
