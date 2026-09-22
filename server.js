@@ -12,11 +12,13 @@ app.use(express.json());
 
 const client = new MongoClient(process.env.MONGODB_URI);
 let kolekcjaWiadomosci;
+let kolekcjaMeczow;
 
 async function polaczZBazaDanych() {
     await client.connect();
     const baza = client.db('lechia-grodzisk');
     kolekcjaWiadomosci = baza.collection('wiadomosci');
+    kolekcjaMeczow = baza.collection('mecze');
     console.log('Połączono z MongoDB Atlas');
 }
 
@@ -67,6 +69,16 @@ app.get('/api/wiadomosci', sprawdzToken, async (req, res) => {
         res.json(wiadomosci);
     } catch (blad) {
         console.error('Błąd pobierania wiadomości:', blad);
+        res.status(500).json({ sukces: false, komunikat: 'Błąd serwera' });
+    }
+});
+
+app.get('/api/mecze', async (req, res) => {
+    try {
+        const mecze = await kolekcjaMeczow.find().sort({ data: 1 }).toArray();
+        res.json(mecze);
+    } catch (blad) {
+        console.error('Błąd pobierania meczów:', blad);
         res.status(500).json({ sukces: false, komunikat: 'Błąd serwera' });
     }
 });
